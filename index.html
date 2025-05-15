@@ -147,19 +147,19 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="email" class="form-label required-field">Email</label>
-                        <input type="email" class="form-control" id="email" required>
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email">
                     </div>
                     <div class="col-md-6">
-                        <label for="phone" class="form-label required-field">Phone</label>
-                        <input type="tel" class="form-control" id="phone" required>
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone">
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label required-field">Are you currently working with a real estate agent?</label>
+                    <label class="form-label">Are you currently working with a real estate agent?</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="hasAgent" id="hasAgentYes" value="yes" required>
+                        <input class="form-check-input" type="radio" name="hasAgent" id="hasAgentYes" value="yes">
                         <label class="form-check-label" for="hasAgentYes">Yes</label>
                     </div>
                     <div class="form-check">
@@ -169,9 +169,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label required-field">Would you like to receive information about off-market listings?</label>
+                    <label class="form-label">Would you like to receive information about off-market listings?</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketYes" value="yes" required>
+                        <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketYes" value="yes">
                         <label class="form-check-label" for="offMarketYes">Yes</label>
                     </div>
                     <div class="form-check">
@@ -420,11 +420,11 @@
                 propertyId: currentPropertyId,
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                hasAgent: document.querySelector('input[name="hasAgent"]:checked').value,
-                offMarketInterest: document.querySelector('input[name="offMarketInterest"]:checked').value,
-                comments: document.getElementById('comments').value,
+                email: document.getElementById('email').value || '',
+                phone: document.getElementById('phone').value || '',
+                hasAgent: document.querySelector('input[name="hasAgent"]:checked')?.value || 'not specified',
+                offMarketInterest: document.querySelector('input[name="offMarketInterest"]:checked')?.value || 'not specified',
+                comments: document.getElementById('comments').value || '',
                 timestamp: new Date().toISOString()
             };
 
@@ -538,21 +538,40 @@
                 const visitorTx = db.transaction(['visitors'], 'readwrite');
                 const visitorStore = visitorTx.objectStore('visitors');
                 const visitorIndex = visitorStore.index('propertyId');
-                const visitorRequest = visitorIndex.getAll(propertyId);
+                const request = visitorIndex.getAll(propertyId);
 
-                visitorRequest.onsuccess = async function() {
-                    const visitors = visitorRequest.result;
-                    for (const visitor of visitors) {
-                        await visitorStore.delete(visitor.id);
-                    }
+                request.onsuccess = function() {
+                    const visitors = request.result;
+                    
+                    // Delete all visitors
+                    const deleteVisitors = visitors.map(visitor => {
+                        return new Promise((resolve, reject) => {
+                            const deleteRequest = visitorStore.delete(visitor.id);
+                            deleteRequest.onsuccess = () => resolve();
+                            deleteRequest.onerror = () => reject(deleteRequest.error);
+                        });
+                    });
 
-                    // Then delete the property
-                    const propertyTx = db.transaction(['properties'], 'readwrite');
-                    const propertyStore = propertyTx.objectStore('properties');
-                    await propertyStore.delete(propertyId);
+                    // After deleting visitors, delete the property
+                    Promise.all(deleteVisitors).then(() => {
+                        const propertyTx = db.transaction(['properties'], 'readwrite');
+                        const propertyStore = propertyTx.objectStore('properties');
+                        const deleteRequest = propertyStore.delete(propertyId);
 
-                    // Refresh the property list
-                    loadProperties();
+                        deleteRequest.onsuccess = function() {
+                            loadProperties(); // Refresh the property list
+                        };
+
+                        deleteRequest.onerror = function(event) {
+                            console.error('Error deleting property:', event.target.error);
+                            alert('Error deleting property. Please try again.');
+                        };
+                    });
+                };
+
+                request.onerror = function(event) {
+                    console.error('Error fetching visitors:', event.target.error);
+                    alert('Error deleting property. Please try again.');
                 };
             } catch (error) {
                 console.error('Error deleting property:', error);
@@ -568,10 +587,16 @@
             try {
                 const transaction = db.transaction(['visitors'], 'readwrite');
                 const store = transaction.objectStore('visitors');
-                await store.delete(visitorId);
-                
-                // Refresh the visitor list
-                loadVisitorData(propertyId);
+                const request = store.delete(visitorId);
+
+                request.onsuccess = function() {
+                    loadVisitorData(propertyId); // Refresh the visitor list
+                };
+
+                request.onerror = function(event) {
+                    console.error('Error deleting visitor:', event.target.error);
+                    alert('Error deleting visitor record. Please try again.');
+                };
             } catch (error) {
                 console.error('Error deleting visitor:', error);
                 alert('Error deleting visitor record. Please try again.');
