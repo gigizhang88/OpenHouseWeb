@@ -342,14 +342,14 @@
                         <div class="card property-card">
                             <div class="card-body">
                                 <div class="d-flex justify-content-between align-items-start">
-                                    <div onclick="showVisitorForm(${property.id}, '${property.address}')">
+                                    <div style="cursor: pointer; flex-grow: 1" onclick="showVisitorForm(${property.id}, '${property.address}')">
                                         <h5 class="card-title">${property.address}</h5>
                                         <p class="card-text">
                                             Date: ${property.date}<br>
                                             Time: ${property.timeSlot}
                                         </p>
                                     </div>
-                                    <button class="btn btn-danger btn-sm" onclick="deleteProperty(${property.id}, event)">
+                                    <button class="btn btn-danger btn-sm ms-2" style="min-width: 80px" onclick="deleteProperty(${property.id}, event)">
                                         <i class="bi bi-trash"></i> Delete
                                     </button>
                                 </div>
