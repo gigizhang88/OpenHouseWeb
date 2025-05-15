@@ -450,82 +450,7 @@
             }
         }
 
-        // Export Data
-        async function exportCurrentPropertyData() {
-            try {
-                // Get property details
-                const propertyTx = db.transaction(['properties'], 'readonly');
-                const propertyStore = propertyTx.objectStore('properties');
-                const propertyRequest = propertyStore.get(currentPropertyId);
-
-                propertyRequest.onsuccess = async function() {
-                    const property = propertyRequest.result;
-                    if (!property) {
-                        alert('Property not found');
-                        return;
-                    }
-
-                    // Get visitors for this property
-                    const visitorTx = db.transaction(['visitors'], 'readonly');
-                    const visitorStore = visitorTx.objectStore('visitors');
-                    const visitorIndex = visitorStore.index('propertyId');
-                    const visitorRequest = visitorIndex.getAll(currentPropertyId);
-
-                    visitorRequest.onsuccess = function() {
-                        const visitors = visitorRequest.result;
-                        
-                        // Create CSV content
-                        const headers = ['Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Has Agent', 'Interest in Off-Market', 'Comments'];
-                        let csvContent = headers.join(',') + '\n';
-
-                        visitors.forEach(visitor => {
-                            const row = [
-                                visitor.timestamp,
-                                visitor.firstName,
-                                visitor.lastName,
-                                visitor.email,
-                                visitor.phone,
-                                visitor.hasAgent,
-                                visitor.offMarketInterest,
-                                (visitor.comments || '').replace(/"/g, '""') // Escape quotes in comments
-                            ].map(field => `"${field || ''}"`).join(',');
-                            csvContent += row + '\n';
-                        });
-
-                        // Create and trigger download
-                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                        const url = URL.createObjectURL(blob);
-                        const link = document.createElement('a');
-                        const fileName = `open_house_${property.address.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
-                        
-                        link.setAttribute('href', url);
-                        link.setAttribute('download', fileName);
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                        URL.revokeObjectURL(url);
-
-                        // Show success message
-                        alert(`Exported ${visitors.length} visitor records for ${property.address}`);
-                    };
-
-                    visitorRequest.onerror = function(event) {
-                        console.error('Error fetching visitors:', event.target.error);
-                        alert('Error exporting visitor data. Please try again.');
-                    };
-                };
-
-                propertyRequest.onerror = function(event) {
-                    console.error('Error fetching property:', event.target.error);
-                    alert('Error finding property data. Please try again.');
-                };
-
-            } catch (error) {
-                console.error('Export error:', error);
-                alert('Error exporting data. Please try again.');
-            }
-        }
-
+        // Delete functionality
         async function deleteProperty(propertyId, event) {
             event.stopPropagation(); // Prevent triggering the card click event
             
@@ -600,6 +525,82 @@
             } catch (error) {
                 console.error('Error deleting visitor:', error);
                 alert('Error deleting visitor record. Please try again.');
+            }
+        }
+
+        // Export Data
+        async function exportCurrentPropertyData() {
+            try {
+                // Get property details
+                const propertyTx = db.transaction(['properties'], 'readonly');
+                const propertyStore = propertyTx.objectStore('properties');
+                const propertyRequest = propertyStore.get(currentPropertyId);
+
+                propertyRequest.onsuccess = async function() {
+                    const property = propertyRequest.result;
+                    if (!property) {
+                        alert('Property not found');
+                        return;
+                    }
+
+                    // Get visitors for this property
+                    const visitorTx = db.transaction(['visitors'], 'readonly');
+                    const visitorStore = visitorTx.objectStore('visitors');
+                    const visitorIndex = visitorStore.index('propertyId');
+                    const visitorRequest = visitorIndex.getAll(currentPropertyId);
+
+                    visitorRequest.onsuccess = function() {
+                        const visitors = visitorRequest.result;
+                        
+                        // Create CSV content
+                        const headers = ['Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Has Agent', 'Interest in Off-Market', 'Comments'];
+                        let csvContent = headers.join(',') + '\n';
+
+                        visitors.forEach(visitor => {
+                            const row = [
+                                visitor.timestamp,
+                                visitor.firstName,
+                                visitor.lastName,
+                                visitor.email,
+                                visitor.phone,
+                                visitor.hasAgent,
+                                visitor.offMarketInterest,
+                                (visitor.comments || '').replace(/"/g, '""') // Escape quotes in comments
+                            ].map(field => `"${field || ''}"`).join(',');
+                            csvContent += row + '\n';
+                        });
+
+                        // Create and trigger download
+                        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                        const url = URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        const fileName = `open_house_${property.address.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
+                        
+                        link.setAttribute('href', url);
+                        link.setAttribute('download', fileName);
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                        URL.revokeObjectURL(url);
+
+                        // Show success message
+                        alert(`Exported ${visitors.length} visitor records for ${property.address}`);
+                    };
+
+                    visitorRequest.onerror = function(event) {
+                        console.error('Error fetching visitors:', event.target.error);
+                        alert('Error exporting visitor data. Please try again.');
+                    };
+                };
+
+                propertyRequest.onerror = function(event) {
+                    console.error('Error fetching property:', event.target.error);
+                    alert('Error finding property data. Please try again.');
+                };
+
+            } catch (error) {
+                console.error('Export error:', error);
+                alert('Error exporting data. Please try again.');
             }
         }
 
