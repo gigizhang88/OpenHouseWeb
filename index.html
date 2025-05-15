@@ -146,19 +146,19 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="email" class="form-label required-field">Email</label>
-                        <input type="email" class="form-control" id="email" required>
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email">
                     </div>
                     <div class="col-md-6">
-                        <label for="phone" class="form-label required-field">Phone</label>
-                        <input type="tel" class="form-control" id="phone" required>
+                        <label for="phone" class="form-label">Phone</label>
+                        <input type="tel" class="form-control" id="phone">
                     </div>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label required-field">Are you currently working with a real estate agent?</label>
+                    <label class="form-label">Are you currently working with a real estate agent?</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="hasAgent" id="hasAgentYes" value="yes" required>
+                        <input class="form-check-input" type="radio" name="hasAgent" id="hasAgentYes" value="yes">
                         <label class="form-check-label" for="hasAgentYes">Yes</label>
                     </div>
                     <div class="form-check">
@@ -168,9 +168,9 @@
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label required-field">Would you like to receive information about off-market listings?</label>
+                    <label class="form-label">Would you like to receive information about off-market listings?</label>
                     <div class="form-check">
-                        <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketYes" value="yes" required>
+                        <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketYes" value="yes">
                         <label class="form-check-label" for="offMarketYes">Yes</label>
                     </div>
                     <div class="form-check">
@@ -406,11 +406,11 @@
                 propertyId: currentPropertyId,
                 firstName: document.getElementById('firstName').value,
                 lastName: document.getElementById('lastName').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                hasAgent: document.querySelector('input[name="hasAgent"]:checked').value,
-                offMarketInterest: document.querySelector('input[name="offMarketInterest"]:checked').value,
-                comments: document.getElementById('comments').value,
+                email: document.getElementById('email').value || '',
+                phone: document.getElementById('phone').value || '',
+                hasAgent: document.querySelector('input[name="hasAgent"]:checked')?.value || 'not specified',
+                offMarketInterest: document.querySelector('input[name="offMarketInterest"]:checked')?.value || 'not specified',
+                comments: document.getElementById('comments').value || '',
                 timestamp: new Date().toISOString()
             };
 
@@ -423,7 +423,7 @@
                 request.onsuccess = function() {
                     document.getElementById('signInForm').reset();
                     alert('Thank you for signing in!');
-                    loadVisitorData(currentPropertyId); // Reload visitor list
+                    loadVisitorData(currentPropertyId);
                 };
 
                 request.onerror = function(event) {
