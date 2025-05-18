@@ -118,12 +118,14 @@
                 </div>
                 <div class="mb-3">
                     <label for="timeSlot" class="form-label required-field">Time Slot</label>
-                    <select class="form-control" id="timeSlot" required>
-                        <option value="10:00 AM - 12:00 PM">10:00 AM - 12:00 PM</option>
-                        <option value="12:00 PM - 2:00 PM">12:00 PM - 2:00 PM</option>
-                        <option value="2:00 PM - 4:00 PM">2:00 PM - 4:00 PM</option>
-                        <option value="4:00 PM - 6:00 PM">4:00 PM - 6:00 PM</option>
-                    </select>
+                    <input list="timeSlotOptions" class="form-control" id="timeSlot" required placeholder="Select or enter custom time slot">
+                    <datalist id="timeSlotOptions">
+                        <option value="10:00 AM - 12:00 PM">
+                        <option value="12:00 PM - 2:00 PM">
+                        <option value="2:00 PM - 4:00 PM">
+                        <option value="4:00 PM - 6:00 PM">
+                    </datalist>
+                    <small class="form-text text-muted">Choose from the list or enter a custom time range</small>
                 </div>
                 <button type="submit" class="btn btn-success">Create Property</button>
                 <button type="button" class="btn btn-secondary" onclick="showPropertyList()">Cancel</button>
