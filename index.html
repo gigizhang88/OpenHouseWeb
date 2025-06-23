@@ -107,6 +107,29 @@
         .nav-buttons.expanded .fab-button {
             transform: rotate(45deg);
         }
+        .editable-comment {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            min-height: 20px;
+        }
+        .editable-comment:hover {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .editable-comment.editing {
+            background-color: white;
+            border: 2px solid #2c8a4a;
+            padding: 6px;
+        }
+        .editable-comment input {
+            width: 100%;
+            border: none;
+            outline: none;
+            font-size: inherit;
+            background: transparent;
+        }
     </style>
 </head>
 <body>
@@ -235,6 +258,7 @@
                             <th>Phone</th>
                             <th>Has Agent</th>
                             <th>Off-Market Interest</th>
+                            <th>Comments</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -431,12 +455,20 @@
                         <td>${visitor.phone}</td>
                         <td>${visitor.hasAgent}</td>
                         <td>${visitor.offMarketInterest}</td>
+                        <td class="editable-comment" data-visitor-id="${visitor.id}" data-comment="${visitor.comments || ''}">${visitor.comments || ''}</td>
                         <td>
                             <button class="btn btn-danger btn-sm" onclick="deleteVisitor(${visitor.id}, ${currentPropertyId})">
                                 <i class="bi bi-trash"></i> Delete
                             </button>
                         </td>
                     `;
+                    
+                    // Add click event listener to the comment cell
+                    const commentCell = row.querySelector('.editable-comment');
+                    commentCell.addEventListener('click', function() {
+                        editComment(this, this.getAttribute('data-comment'));
+                    });
+                    
                     tableBody.appendChild(row);
                 });
             };
@@ -642,6 +674,91 @@
         function toggleNavButtons() {
             const navButtons = document.querySelector('.nav-buttons');
             navButtons.classList.toggle('expanded');
+        }
+
+        // Comment editing functionality
+        function editComment(element, currentComment) {
+            // If already editing, don't do anything
+            if (element.classList.contains('editing')) {
+                return;
+            }
+
+            const visitorId = element.getAttribute('data-visitor-id');
+            const originalText = element.textContent;
+            
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentComment;
+            input.className = 'form-control';
+            
+            // Clear the cell and add input
+            element.innerHTML = '';
+            element.appendChild(input);
+            element.classList.add('editing');
+            
+            // Focus on input
+            input.focus();
+            input.select();
+            
+            // Handle save on Enter or blur
+            function saveComment() {
+                const newComment = input.value.trim();
+                element.classList.remove('editing');
+                element.textContent = newComment;
+                
+                // Update in database
+                updateVisitorComment(visitorId, newComment);
+            }
+            
+            function cancelEdit() {
+                element.classList.remove('editing');
+                element.textContent = originalText;
+            }
+            
+            input.addEventListener('blur', saveComment);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveComment();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+        }
+
+        async function updateVisitorComment(visitorId, newComment) {
+            try {
+                const transaction = db.transaction(['visitors'], 'readwrite');
+                const store = transaction.objectStore('visitors');
+                const request = store.get(parseInt(visitorId));
+                
+                request.onsuccess = function() {
+                    const visitor = request.result;
+                    if (visitor) {
+                        visitor.comments = newComment;
+                        const updateRequest = store.put(visitor);
+                        
+                        updateRequest.onsuccess = function() {
+                            console.log('Comment updated successfully');
+                        };
+                        
+                        updateRequest.onerror = function(event) {
+                            console.error('Error updating comment:', event.target.error);
+                            alert('Error updating comment. Please try again.');
+                        };
+                    }
+                };
+                
+                request.onerror = function(event) {
+                    console.error('Error finding visitor:', event.target.error);
+                    alert('Error finding visitor record. Please try again.');
+                };
+            } catch (error) {
+                console.error('Error updating comment:', error);
+                alert('Error updating comment. Please try again.');
+            }
         }
 
         // Initialize app
