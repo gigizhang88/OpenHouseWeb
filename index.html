@@ -130,6 +130,27 @@
             font-size: inherit;
             background: transparent;
         }
+        .form-switch {
+            padding-left: 2.5em;
+        }
+        .form-switch .form-check-input {
+            width: 2em;
+            height: 1em;
+            margin-left: -2.5em;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%280, 0, 0, 0.25%29'/%3e%3c/svg%3e");
+            background-position: left center;
+            border-radius: 2em;
+            transition: background-position .15s ease-in-out;
+        }
+        .form-switch .form-check-input:checked {
+            background-position: right center;
+            background-color: #2c8a4a;
+            border-color: #2c8a4a;
+        }
+        .form-check-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
@@ -201,11 +222,23 @@
 
                 <div class="row mb-3">
                     <div class="col-md-6">
-                        <label for="email" class="form-label">Email</label>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="email" class="form-label">Email</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="emailRequired" onchange="toggleFieldRequired('email', this.checked)">
+                                <label class="form-check-label" for="emailRequired">Required</label>
+                            </div>
+                        </div>
                         <input type="email" class="form-control" id="email">
                     </div>
                     <div class="col-md-6">
-                        <label for="phone" class="form-label">Phone</label>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <label for="phone" class="form-label">Phone</label>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" id="phoneRequired" onchange="toggleFieldRequired('phone', this.checked)">
+                                <label class="form-check-label" for="phoneRequired">Required</label>
+                            </div>
+                        </div>
                         <input type="tel" class="form-control" id="phone">
                     </div>
                 </div>
@@ -482,6 +515,11 @@
         async function handleVisitorSubmit(event) {
             event.preventDefault();
             
+            // Validate form before submission
+            if (!validateVisitorForm()) {
+                return;
+            }
+            
             const visitor = {
                 propertyId: currentPropertyId,
                 firstName: document.getElementById('firstName').value,
@@ -674,6 +712,69 @@
         function toggleNavButtons() {
             const navButtons = document.querySelector('.nav-buttons');
             navButtons.classList.toggle('expanded');
+        }
+
+        // Field requirement toggle functionality
+        function toggleFieldRequired(fieldId, isRequired) {
+            const field = document.getElementById(fieldId);
+            const label = field.previousElementSibling.querySelector('label');
+            
+            if (isRequired) {
+                field.setAttribute('required', 'required');
+                label.classList.add('required-field');
+            } else {
+                field.removeAttribute('required');
+                label.classList.remove('required-field');
+            }
+        }
+
+        // Enhanced form validation
+        function validateVisitorForm() {
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const emailRequired = document.getElementById('emailRequired').checked;
+            const phoneRequired = document.getElementById('phoneRequired').checked;
+            
+            // Check required fields
+            if (!firstName) {
+                alert('First Name is required.');
+                document.getElementById('firstName').focus();
+                return false;
+            }
+            
+            if (!lastName) {
+                alert('Last Name is required.');
+                document.getElementById('lastName').focus();
+                return false;
+            }
+            
+            if (emailRequired && !email) {
+                alert('Email is required.');
+                document.getElementById('email').focus();
+                return false;
+            }
+            
+            if (phoneRequired && !phone) {
+                alert('Phone is required.');
+                document.getElementById('phone').focus();
+                return false;
+            }
+            
+            // Validate email format if provided
+            if (email && !isValidEmail(email)) {
+                alert('Please enter a valid email address.');
+                document.getElementById('email').focus();
+                return false;
+            }
+            
+            return true;
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
         }
 
         // Comment editing functionality
