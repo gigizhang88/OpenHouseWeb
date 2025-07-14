@@ -151,6 +151,42 @@
             font-size: 0.9rem;
             color: #6c757d;
         }
+        .editable-field {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            min-height: 20px;
+        }
+        .editable-field:hover {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+        }
+        .editable-field.editing {
+            background-color: white;
+            border: 2px solid #2c8a4a;
+            padding: 6px;
+        }
+        .btn-success {
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: rgba(44, 138, 74, 0.3);
+            transition: all 0.2s ease;
+        }
+        .btn-success:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 8px rgba(44, 138, 74, 0.3);
+        }
+        .btn-success:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 4px rgba(44, 138, 74, 0.3);
+        }
+        @media (max-width: 768px) {
+            .btn-success {
+                min-height: 70px !important;
+                font-size: 1.3rem !important;
+                padding: 1rem !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -272,7 +308,9 @@
                     <textarea class="form-control" id="comments" rows="3"></textarea>
                 </div>
 
-                <button type="submit" class="btn btn-success w-100">Sign In</button>
+                <button type="submit" class="btn btn-success w-100" style="min-height: 60px; font-size: 1.2rem; margin-top: 1rem;">
+                    <i class="bi bi-check-circle me-2"></i>Sign In
+                </button>
             </form>
         </div>
     </div>
@@ -286,7 +324,8 @@
                     <thead>
                         <tr>
                             <th>Time</th>
-                            <th>Name</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Has Agent</th>
@@ -483,11 +522,12 @@
                     const time = new Date(visitor.timestamp).toLocaleString();
                     row.innerHTML = `
                         <td>${time}</td>
-                        <td>${visitor.firstName} ${visitor.lastName}</td>
-                        <td>${visitor.email}</td>
-                        <td>${visitor.phone}</td>
-                        <td>${visitor.hasAgent}</td>
-                        <td>${visitor.offMarketInterest}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="firstName" data-value="${visitor.firstName}">${visitor.firstName}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="lastName" data-value="${visitor.lastName}">${visitor.lastName}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="email" data-value="${visitor.email || ''}">${visitor.email || ''}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="phone" data-value="${visitor.phone || ''}">${visitor.phone || ''}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="hasAgent" data-value="${visitor.hasAgent}">${visitor.hasAgent}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="offMarketInterest" data-value="${visitor.offMarketInterest}">${visitor.offMarketInterest}</td>
                         <td class="editable-comment" data-visitor-id="${visitor.id}" data-comment="${visitor.comments || ''}">${visitor.comments || ''}</td>
                         <td>
                             <button class="btn btn-danger btn-sm" onclick="deleteVisitor(${visitor.id}, ${currentPropertyId})">
@@ -496,10 +536,16 @@
                         </td>
                     `;
                     
-                    // Add click event listener to the comment cell
-                    const commentCell = row.querySelector('.editable-comment');
-                    commentCell.addEventListener('click', function() {
-                        editComment(this, this.getAttribute('data-comment'));
+                    // Add click event listeners to all editable fields
+                    const editableFields = row.querySelectorAll('.editable-field, .editable-comment');
+                    editableFields.forEach(field => {
+                        field.addEventListener('click', function() {
+                            if (this.classList.contains('editable-comment')) {
+                                editComment(this, this.getAttribute('data-comment'));
+                            } else {
+                                editField(this, this.getAttribute('data-field'), this.getAttribute('data-value'));
+                            }
+                        });
                     });
                     
                     tableBody.appendChild(row);
@@ -859,6 +905,91 @@
             } catch (error) {
                 console.error('Error updating comment:', error);
                 alert('Error updating comment. Please try again.');
+            }
+        }
+
+        // Field editing functionality
+        function editField(element, fieldType, currentValue) {
+            // If already editing, don't do anything
+            if (element.classList.contains('editing')) {
+                return;
+            }
+
+            const visitorId = element.getAttribute('data-visitor-id');
+            const originalValue = currentValue;
+            
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = currentValue;
+            input.className = 'form-control';
+            
+            // Clear the cell and add input
+            element.innerHTML = '';
+            element.appendChild(input);
+            element.classList.add('editing');
+            
+            // Focus on input
+            input.focus();
+            input.select();
+            
+            // Handle save on Enter or blur
+            function saveField() {
+                const newValue = input.value.trim();
+                element.classList.remove('editing');
+                element.textContent = newValue;
+                
+                // Update in database
+                updateVisitorField(visitorId, fieldType, newValue);
+            }
+            
+            function cancelEdit() {
+                element.classList.remove('editing');
+                element.textContent = originalValue;
+            }
+            
+            input.addEventListener('blur', saveField);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    saveField();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+        }
+
+        async function updateVisitorField(visitorId, fieldType, newValue) {
+            try {
+                const transaction = db.transaction(['visitors'], 'readwrite');
+                const store = transaction.objectStore('visitors');
+                const request = store.get(parseInt(visitorId));
+                
+                request.onsuccess = function() {
+                    const visitor = request.result;
+                    if (visitor) {
+                        visitor[fieldType] = newValue;
+                        const updateRequest = store.put(visitor);
+                        
+                        updateRequest.onsuccess = function() {
+                            console.log(`${fieldType} updated successfully`);
+                        };
+                        
+                        updateRequest.onerror = function(event) {
+                            console.error('Error updating field:', event.target.error);
+                            alert('Error updating field. Please try again.');
+                        };
+                    }
+                };
+                
+                request.onerror = function(event) {
+                    console.error('Error finding visitor:', event.target.error);
+                    alert('Error finding visitor record. Please try again.');
+                };
+            } catch (error) {
+                console.error('Error updating field:', error);
+                alert('Error updating field. Please try again.');
             }
         }
 
