@@ -202,6 +202,24 @@
                 padding: 1rem !important;
             }
         }
+        .btn-outline-secondary {
+            border-color: #6c757d;
+            color: #6c757d;
+            background-color: transparent;
+        }
+        .btn-outline-secondary:hover {
+            background-color: #6c757d;
+            border-color: #6c757d;
+            color: white;
+        }
+        .btn-outline-secondary:focus {
+            box-shadow: 0 0 0 0.2rem rgba(108, 117, 125, 0.25);
+        }
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+            border-radius: 0.2rem;
+        }
     </style>
 </head>
 <body>
@@ -338,7 +356,12 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Time</th>
+                            <th>
+                                Time
+                                <button class="btn btn-sm btn-outline-secondary ms-2" onclick="toggleTimeSort()" title="Sort by Time">
+                                    <i class="bi bi-sort-down" id="timeSortIcon"></i>
+                                </button>
+                            </th>
                             <th>First Name</th>
                             <th>Last Name</th>
                             <th>Email</th>
@@ -534,6 +557,7 @@
 
                 visitors.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)).forEach(visitor => {
                     const row = document.createElement('tr');
+                    row.setAttribute('data-visitor-id', visitor.id);
                     const time = new Date(visitor.timestamp).toLocaleString();
                     row.innerHTML = `
                         <td>${time}</td>
@@ -1006,6 +1030,74 @@
                 console.error('Error updating field:', error);
                 alert('Error updating field. Please try again.');
             }
+        }
+
+        // Sort functionality
+        let isTimeAscending = true;
+        function toggleTimeSort() {
+            const visitors = Array.from(document.querySelectorAll('#visitorTableBody tr')).map(row => {
+                const cells = row.querySelectorAll('td');
+                return {
+                    time: new Date(cells[0].textContent),
+                    firstName: cells[1].textContent,
+                    lastName: cells[2].textContent,
+                    email: cells[3].textContent,
+                    phone: cells[4].textContent,
+                    hasAgent: cells[5].textContent,
+                    offMarketInterest: cells[6].textContent,
+                    comments: cells[7].textContent,
+                    id: row.getAttribute('data-visitor-id')
+                };
+            });
+
+            visitors.sort((a, b) => {
+                if (isTimeAscending) {
+                    return a.time - b.time;
+                } else {
+                    return b.time - a.time;
+                }
+            });
+
+            const tableBody = document.getElementById('visitorTableBody');
+            tableBody.innerHTML = '';
+            visitors.forEach(visitor => {
+                const row = document.createElement('tr');
+                row.setAttribute('data-visitor-id', visitor.id);
+                row.innerHTML = `
+                    <td>${new Date(visitor.time).toLocaleString()}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="firstName" data-value="${visitor.firstName}">${visitor.firstName}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="lastName" data-value="${visitor.lastName}">${visitor.lastName}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="email" data-value="${visitor.email || ''}">${visitor.email || ''}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="phone" data-value="${visitor.phone || ''}">${visitor.phone || ''}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="hasAgent" data-value="${visitor.hasAgent}">${visitor.hasAgent}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="offMarketInterest" data-value="${visitor.offMarketInterest}">${visitor.offMarketInterest}</td>
+                    <td class="editable-comment" data-visitor-id="${visitor.id}" data-comment="${visitor.comments || ''}">${visitor.comments || ''}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="deleteVisitor(${visitor.id}, ${currentPropertyId})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                `;
+                
+                // Add click event listeners to all editable fields
+                const editableFields = row.querySelectorAll('.editable-field, .editable-comment');
+                editableFields.forEach(field => {
+                    field.addEventListener('click', function() {
+                        if (this.classList.contains('editable-comment')) {
+                            editComment(this, this.getAttribute('data-comment'));
+                        } else {
+                            editField(this, this.getAttribute('data-field'), this.getAttribute('data-value'));
+                        }
+                    });
+                });
+                
+                tableBody.appendChild(row);
+            });
+
+            isTimeAscending = !isTimeAscending;
+            const timeSortIcon = document.getElementById('timeSortIcon');
+            timeSortIcon.classList.toggle('bi-sort-down');
+            timeSortIcon.classList.toggle('bi-sort-up');
         }
 
         // Initialize app
