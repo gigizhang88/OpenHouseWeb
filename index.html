@@ -282,7 +282,7 @@
                 </div>
                 <div class="text-center flex-grow-1">
                     <h1 class="mb-0">Open House Manager</h1>
-                    <p class="lead mb-0" id="propertyAddress"></p>
+                    <p class="lead mb-0" id="propertyAddress" onclick="editPropertyAddress(this)" style="cursor: pointer; padding: 5px; border-radius: 4px; transition: background-color 0.2s;" onmouseover="this.style.backgroundColor='rgba(255,255,255,0.1)'" onmouseout="this.style.backgroundColor='transparent'"></p>
                 </div>
                 <div style="width: 60px;"></div>
             </div>
@@ -822,7 +822,8 @@
                         const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                         const url = URL.createObjectURL(blob);
                         const link = document.createElement('a');
-                        const fileName = `open_house_${property.address.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
+                        const currentAddress = document.getElementById('propertyAddress').textContent || property.address;
+                        const fileName = `open_house_${currentAddress.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_${new Date().toISOString().split('T')[0]}.csv`;
                         
                         link.setAttribute('href', url);
                         link.setAttribute('download', fileName);
@@ -832,7 +833,7 @@
                         URL.revokeObjectURL(url);
 
                         // Show success message
-                        alert(`Exported ${visitors.length} visitor records for ${property.address}`);
+                        alert(`Exported ${visitors.length} visitor records for ${currentAddress}`);
                     };
 
                     visitorRequest.onerror = function(event) {
@@ -1157,6 +1158,104 @@
             const timeSortIcon = document.getElementById('timeSortIcon');
             timeSortIcon.classList.toggle('bi-sort-down');
             timeSortIcon.classList.toggle('bi-sort-up');
+        }
+
+        // Property address editing functionality
+        function editPropertyAddress(element) {
+            // If already editing, don't do anything
+            if (element.classList.contains('editing')) {
+                return;
+            }
+
+            const originalText = element.textContent;
+            
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.value = originalText;
+            input.className = 'form-control';
+            input.style.fontSize = '1.25rem';
+            input.style.fontWeight = '300';
+            input.style.textAlign = 'center';
+            input.style.background = 'rgba(255,255,255,0.9)';
+            input.style.border = '2px solid #e9ccdc';
+            input.style.borderRadius = '4px';
+            input.style.color = '#30325f';
+            
+            // Clear the element and add input
+            element.innerHTML = '';
+            element.appendChild(input);
+            element.classList.add('editing');
+            
+            // Focus on input
+            input.focus();
+            input.select();
+            
+            // Handle save on Enter or blur
+            function savePropertyAddress() {
+                const newAddress = input.value.trim();
+                element.classList.remove('editing');
+                element.textContent = newAddress;
+                
+                // Update in database
+                updatePropertyAddress(newAddress);
+            }
+            
+            function cancelEdit() {
+                element.classList.remove('editing');
+                element.textContent = originalText;
+            }
+            
+            input.addEventListener('blur', savePropertyAddress);
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    savePropertyAddress();
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    cancelEdit();
+                }
+            });
+        }
+
+        async function updatePropertyAddress(newAddress) {
+            if (!currentPropertyId) {
+                console.log('No current property selected');
+                return;
+            }
+
+            try {
+                const transaction = db.transaction(['properties'], 'readwrite');
+                const store = transaction.objectStore('properties');
+                const request = store.get(currentPropertyId);
+                
+                request.onsuccess = function() {
+                    const property = request.result;
+                    if (property) {
+                        property.address = newAddress;
+                        const updateRequest = store.put(property);
+                        
+                        updateRequest.onsuccess = function() {
+                            console.log('Property address updated successfully');
+                            // Refresh the property list to show updated address
+                            loadProperties();
+                        };
+                        
+                        updateRequest.onerror = function(event) {
+                            console.error('Error updating property address:', event.target.error);
+                            alert('Error updating property address. Please try again.');
+                        };
+                    }
+                };
+                
+                request.onerror = function(event) {
+                    console.error('Error finding property:', event.target.error);
+                    alert('Error finding property. Please try again.');
+                };
+            } catch (error) {
+                console.error('Error updating property address:', error);
+                alert('Error updating property address. Please try again.');
+            }
         }
 
         // Initialize app
