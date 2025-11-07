@@ -239,6 +239,32 @@
             font-size: 0.875rem;
             border-radius: 0.2rem;
         }
+        .waiver-section {
+            margin: 1.5rem 0;
+            padding: 1rem;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background-color: #f8f9fa;
+            text-align: left;
+        }
+        .waiver-title {
+            font-weight: bold;
+            margin-bottom: 0.75rem;
+        }
+        .waiver-content {
+            color: #6c757d;
+            font-weight: 500;
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        .waiver-checkbox {
+            display: flex;
+            align-items: flex-start;
+        }
+        .waiver-checkbox .form-check-input {
+            margin-top: 0.25rem;
+            margin-right: 0.5rem;
+        }
         @media (max-width: 768px) {
             .header-logo {
                 width: 100px;
@@ -371,7 +397,7 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label class="form-label">Are you currently working with a real estate agent?</label>
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="hasAgent" id="hasAgentYes" value="yes">
@@ -383,7 +409,7 @@
                     </div>
                 </div>
 
-                <div class="mb-3">
+                <div class="mb-3 text-start">
                     <label class="form-label">Would you like to receive information about off-market listings?</label>
                     <div class="form-check">
                         <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketYes" value="yes">
@@ -398,6 +424,19 @@
                 <div class="mb-4">
                     <label for="comments" class="form-label">Additional Comments or Questions</label>
                     <textarea class="form-control" id="comments" rows="3"></textarea>
+                </div>
+
+                <div class="waiver-section">
+                    <div class="waiver-title">Visitor Acknowledgment and Liability Waiver</div>
+                    <div class="waiver-content">
+                        By signing below, I acknowledge that the property managed by AL Homes Inc. is an active construction site and may contain potential hazards. I agree to enter at my own risk and to follow all safety instructions and site rules. I release and hold harmless AL Homes Inc., its employees, contractors, and affiliates from any liability for injury, loss, or damage that may occur during my visit.
+                    </div>
+                    <div class="form-check waiver-checkbox">
+                        <input class="form-check-input" type="checkbox" id="waiverCheckbox" required>
+                        <label class="form-check-label" for="waiverCheckbox">
+                            I have read and agree to the terms above
+                        </label>
+                    </div>
                 </div>
 
                 <button type="submit" class="btn btn-success w-100" style="min-height: 60px; font-size: 1.2rem; margin-top: 1rem;">
@@ -881,6 +920,7 @@
             const phone = document.getElementById('phone').value.trim();
             const emailRequired = document.getElementById('emailRequired').checked;
             const phoneRequired = document.getElementById('phoneRequired').checked;
+            const waiverChecked = document.getElementById('waiverCheckbox').checked;
             
             // Check required fields
             if (!firstName) {
@@ -911,6 +951,13 @@
             if (email && !isValidEmail(email)) {
                 alert('Please enter a valid email address.');
                 document.getElementById('email').focus();
+                return false;
+            }
+            
+            // Check waiver checkbox
+            if (!waiverChecked) {
+                alert('You must check the Visitor Acknowledgment and Liability Waiver before signing in.');
+                document.getElementById('waiverCheckbox').focus();
                 return false;
             }
             
