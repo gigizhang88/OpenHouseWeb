@@ -65,15 +65,31 @@
         input, select, textarea {
             font-size: 1.1rem !important;
             padding: 0.75rem !important;
+            text-align: left;
+        }
+        select, datalist {
+            text-align: left;
+        }
+        select option {
+            text-align: left;
+        }
+        .form-check {
+            text-align: left;
+            justify-content: flex-start;
         }
         .form-check-input {
             width: 1.5em;
             height: 1.5em;
             margin-right: 0.5em;
+            float: left;
         }
         .form-check-label {
             font-size: 1.1rem;
             padding-top: 0.25rem;
+            text-align: left;
+        }
+        .form-label {
+            text-align: left;
         }
         #propertyList {
             display: none;
@@ -162,6 +178,7 @@
         }
         .form-switch {
             padding-left: 2.5em;
+            text-align: left;
         }
         .form-switch .form-check-input {
             width: 2em;
@@ -171,15 +188,17 @@
             background-position: left center;
             border-radius: 2em;
             transition: background-position .15s ease-in-out;
+            float: left;
         }
         .form-switch .form-check-input:checked {
             background-position: right center;
             background-color: #30325f;
             border-color: #30325f;
         }
-        .form-check-label {
+        .form-switch .form-check-label {
             font-size: 0.9rem;
             color: #6c757d;
+            text-align: left;
         }
         .editable-field {
             cursor: pointer;
@@ -260,10 +279,16 @@
         .waiver-checkbox {
             display: flex;
             align-items: flex-start;
+            text-align: left;
+            justify-content: flex-start;
         }
         .waiver-checkbox .form-check-input {
             margin-top: 0.25rem;
             margin-right: 0.5rem;
+            float: left;
+        }
+        .waiver-checkbox .form-check-label {
+            text-align: left;
         }
         @media (max-width: 768px) {
             .header-logo {
@@ -410,16 +435,29 @@
                 </div>
 
                 <div class="mb-3 text-start">
-                    <label class="form-label">Would you like to receive information about off-market listings?</label>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketYes" value="yes">
-                        <label class="form-check-label" for="offMarketYes">Yes</label>
+                    <label class="form-label d-block">Are you also interested in (select all options):</label>
+                  
+                    <div class="form-check ps-0">
+                      <input class="form-check-input ms-0 me-2" type="checkbox" name="interests[]" id="interestOffMarket" value="off-market">
+                      <label class="form-check-label" for="interestOffMarket">Off-market listings</label>
                     </div>
-                    <div class="form-check">
-                        <input class="form-check-input" type="radio" name="offMarketInterest" id="offMarketNo" value="no">
-                        <label class="form-check-label" for="offMarketNo">No</label>
+                  
+                    <div class="form-check ps-0">
+                      <input class="form-check-input ms-0 me-2" type="checkbox" name="interests[]" id="interestNewConstruction" value="new-construction">
+                      <label class="form-check-label" for="interestNewConstruction">Buy a new construction</label>
+                    </div>
+                  
+                    <div class="form-check ps-0">
+                      <input class="form-check-input ms-0 me-2" type="checkbox" name="interests[]" id="interestSellHome" value="sell-home">
+                      <label class="form-check-label" for="interestSellHome">Sell your home</label>
+                    </div>
+                  
+                    <div class="form-check ps-0">
+                      <input class="form-check-input ms-0 me-2" type="checkbox" name="interests[]" id="interestRemodel" value="remodel-rebuild">
+                      <label class="form-check-label" for="interestRemodel">Remodel or rebuild your home</label>
                     </div>
                 </div>
+                
 
                 <div class="mb-4">
                     <label for="comments" class="form-label">Additional Comments or Questions</label>
@@ -465,7 +503,7 @@
                             <th>Email</th>
                             <th>Phone</th>
                             <th>Has Agent</th>
-                            <th>Off-Market Interest</th>
+                            <th>Interests</th>
                             <th>Comments</th>
                             <th>Actions</th>
                         </tr>
@@ -664,7 +702,7 @@
                         <td class="editable-field" data-visitor-id="${visitor.id}" data-field="email" data-value="${visitor.email || ''}">${visitor.email || ''}</td>
                         <td class="editable-field" data-visitor-id="${visitor.id}" data-field="phone" data-value="${visitor.phone || ''}">${visitor.phone || ''}</td>
                         <td class="editable-field" data-visitor-id="${visitor.id}" data-field="hasAgent" data-value="${visitor.hasAgent}">${visitor.hasAgent}</td>
-                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="offMarketInterest" data-value="${visitor.offMarketInterest}">${visitor.offMarketInterest}</td>
+                        <td class="editable-field" data-visitor-id="${visitor.id}" data-field="interests" data-value="${visitor.interests || 'none'}">${visitor.interests || 'none'}</td>
                         <td class="editable-comment" data-visitor-id="${visitor.id}" data-comment="${visitor.comments || ''}">${visitor.comments || ''}</td>
                         <td>
                             <button class="btn btn-danger btn-sm" onclick="deleteVisitor(${visitor.id}, ${currentPropertyId})">
@@ -703,6 +741,14 @@
                 return;
             }
             
+            const interestLabels = {
+                'off-market': 'Off-market listings',
+                'new-construction': 'Buy a new construction',
+                'sell-home': 'Sell your home',
+                'remodel-rebuild': 'Remodel or rebuild your home'
+            };
+            const selectedInterests = Array.from(document.querySelectorAll('input[name="interests[]"]:checked')).map(cb => interestLabels[cb.value] || cb.value);
+            
             const visitor = {
                 propertyId: currentPropertyId,
                 firstName: document.getElementById('firstName').value,
@@ -710,7 +756,7 @@
                 email: document.getElementById('email').value || '',
                 phone: document.getElementById('phone').value || '',
                 hasAgent: document.querySelector('input[name="hasAgent"]:checked')?.value || 'not specified',
-                offMarketInterest: document.querySelector('input[name="offMarketInterest"]:checked')?.value || 'not specified',
+                interests: selectedInterests.length > 0 ? selectedInterests.join(', ') : 'none',
                 comments: document.getElementById('comments').value || '',
                 timestamp: new Date().toISOString()
             };
@@ -840,7 +886,7 @@
                         const visitors = visitorRequest.result;
                         
                         // Create CSV content
-                        const headers = ['Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Has Agent', 'Interest in Off-Market', 'Comments'];
+                        const headers = ['Timestamp', 'First Name', 'Last Name', 'Email', 'Phone', 'Has Agent', 'Interests', 'Comments'];
                         let csvContent = headers.join(',') + '\n';
 
                         visitors.forEach(visitor => {
@@ -851,7 +897,7 @@
                                 visitor.email,
                                 visitor.phone,
                                 visitor.hasAgent,
-                                visitor.offMarketInterest,
+                                visitor.interests || 'none',
                                 (visitor.comments || '').replace(/"/g, '""') // Escape quotes in comments
                             ].map(field => `"${field || ''}"`).join(',');
                             csvContent += row + '\n';
@@ -1151,7 +1197,7 @@
                     email: cells[3].textContent,
                     phone: cells[4].textContent,
                     hasAgent: cells[5].textContent,
-                    offMarketInterest: cells[6].textContent,
+                    interests: cells[6].textContent,
                     comments: cells[7].textContent,
                     id: row.getAttribute('data-visitor-id')
                 };
@@ -1177,7 +1223,7 @@
                     <td class="editable-field" data-visitor-id="${visitor.id}" data-field="email" data-value="${visitor.email || ''}">${visitor.email || ''}</td>
                     <td class="editable-field" data-visitor-id="${visitor.id}" data-field="phone" data-value="${visitor.phone || ''}">${visitor.phone || ''}</td>
                     <td class="editable-field" data-visitor-id="${visitor.id}" data-field="hasAgent" data-value="${visitor.hasAgent}">${visitor.hasAgent}</td>
-                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="offMarketInterest" data-value="${visitor.offMarketInterest}">${visitor.offMarketInterest}</td>
+                    <td class="editable-field" data-visitor-id="${visitor.id}" data-field="interests" data-value="${visitor.interests || 'none'}">${visitor.interests || 'none'}</td>
                     <td class="editable-comment" data-visitor-id="${visitor.id}" data-comment="${visitor.comments || ''}">${visitor.comments || ''}</td>
                     <td>
                         <button class="btn btn-danger btn-sm" onclick="deleteVisitor(${visitor.id}, ${currentPropertyId})">
